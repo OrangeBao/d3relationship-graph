@@ -9,7 +9,7 @@
     <style>
         .pointer {
             fill: blue;
-            stroke-width: 15;
+            stroke-width: 20;
             stroke: transparent;
             cursor: pointer;
         }
@@ -37,42 +37,36 @@
 </body>
 <script>
 
+
     window.onload=function() {
       var boxs = [
-        { x:10, y:10, width: 60, height: 30, text: 'A'},
-        { x:10, y:50, width: 60, height: 30, text: 'B'},
-        { x:10, y:90, width: 60, height: 30, text: 'C' },
-        { x:10, y:130, width: 60, height: 30, text: 'D' },
-        { x:10, y:170, width: 60, height: 30, text: 'E' },
+        {  width: 60, height: 30, text: 'A'},
+        {  width: 60, height: 30, text: 'B'},
+        { width: 60, height: 30, text: 'C' },
+        { width: 60, height: 30, text: 'D' },
+        { width: 60, height: 30, text: 'E' },
 
-        { x:200, y:10, width: 60, height: 30, text: 'F' },
-        { x:200, y:50, width: 60, height: 30, text: 'G' },
-        { x:200, y:90, width: 60, height: 30, text: 'H' },
-        { x:200, y:130, width: 60, height: 30, text: 'I' },
-      ];
-      var lines = [
-//        { s: 0, e: 1 },
-//        { s: 1, e: 2 }
+        {  width: 60, height: 30, text: 'F' },
+        { width: 60, height: 30, text: 'G' },
+        { width: 60, height: 30, text: 'H' }
         ];
+      var lines = [
+        { s: 0, e: 6},
+        { s: 1, e: 6 }
+        ];
+      var groups = [
+        {ele: [0,1,2,3,4], x:10, y:10},
+        {ele: [5,6,7], x:200, y:10}
+      ];
       var graph = new Graph({
+        groups: groups,
         boxs: boxs,
         lines: lines,
         d3: d3,
         id: 'container',
         textPaddingLeft: 10,
         textPaddingTop: 8,
-        textSize: 12,
-        eventHandler: {
-          dragStart: function() {
-            console.log('drag start');
-          },
-          drag: function() {
-            console.log('draging');
-          },
-          dragEnd: function() {
-            console.log('drag end');
-          }
-        }
+        textSize: 12
       });
       graph.display();
     }

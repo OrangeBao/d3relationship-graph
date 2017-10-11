@@ -55,15 +55,11 @@
   function getMinLine(s, e) {
     var pointerS = [
       getLeftMiddle(s),
-      getMiddleTop(s),
-      getRightMiddle(s),
-      getMiddleBottom(s)
+      getRightMiddle(s)
     ];
     var pointerE = [
       getLeftMiddle(e),
-      getMiddleTop(e),
-      getRightMiddle(e),
-      getMiddleBottom(e),
+      getRightMiddle(e)
     ];
 
     var minIndex = - 1;
@@ -86,8 +82,8 @@
       }
     });
 
-    var eIndex = minIndex % 4;
-    var sIndex = (minIndex - eIndex) / 4;
+    var eIndex = minIndex % pointerE.length;
+    var sIndex = (minIndex - eIndex) / pointerS.length;
     return {
       x1: pointerS[sIndex].x,
       y1: pointerS[sIndex].y,
@@ -113,6 +109,7 @@
     this.textSize = this.options.textSize || 12;
     this.paddingLeft = this.options.textPaddingLeft || 0;
     this.paddingTop = this.options.textPaddingTop || 0;
+    this.groups = this.options.groups || [];
   };
 
   Graph.prototype.layoutInfo = function() {
@@ -122,11 +119,155 @@
     };
   };
 
+  Graph.prototype.offsetY = function(gindex, index) {
+    var ary = this.groups[gindex].ele;
+    var ret = 0;
+    for(var i=0; i < index;i++) {
+      ret += this.boxs[ary[i]].height;
+    }
+    return ret;
+
+  };
+
+  Graph.prototype.drawGroup = function(group, r) {
+    var self = this;
+    var groupWrapper = this.container.append('g');
+    groupWrapper
+      .attr('id', this.createGroupId(r))
+      .attr('transform', 'translate(' + group.x + ',' + group.y + ')');
+    var eles = group.ele;
+    var x = 0,
+      y = 0,
+      boxs = this.boxs,
+      textSize = this.textSize,
+      paddingLeft = this.paddingLeft,
+      paddingTop = this.paddingTop;
+    eles.forEach(function(item, i) {
+      var groupBox = groupWrapper.append('g');
+      groupBox.append('rect')
+        .attr('class', 'box')
+        .attr('x', x)
+        .attr('y', y)
+        .attr('width', boxs[item].width)
+        .attr('height', boxs[item].height);
+
+      // draw Text
+      groupBox.append('text')
+        .attr('class', 'text')
+        .attr('font-size', textSize + 'px')
+        .attr('x', paddingLeft) // TODO: 调整文字布局
+        .attr('y', y + textSize + paddingTop)
+        .text(boxs[item].text);
+
+      var handle = self.d3.behavior.drag()
+        .origin(function() {
+          return {};
+        });
+      handle.on('dragstart', function() {
+        var eCircle = self.d3.select(d3.event.sourceEvent.target);
+        lineSx = myParseInt(eCircle.attr('cx')) + group.x;
+        lineSy = myParseInt(eCircle.attr('cy')) + group.y;
+        dummyLine.attr('x1', lineSx).attr('y1', lineSy);
+        dragging = true;
+        self.d3.event.sourceEvent.stopPropagation();
+      });
+
+
+      handle.on('dragend', function() {
+        dragging = false;
+        // console.log('dragEnd1');
+        var eCircle = self.d3.select(d3.event.sourceEvent.target);
+        if (eCircle.attr('pid') !== null) {
+          self.addLine({s: item, e: myParseInt(eCircle.attr('pid'))});
+        }
+        dummyLine.style("display", "none");
+      });
+
+      var circleR = 2;
+
+      groupBox.append('circle')
+        .attr('class', 'pointer')
+        .attr('r', circleR)
+        .attr('cx', x)
+        .attr('cy', y + boxs[item].height / 2)
+        .attr('pid', item)
+        .call(handle);
+
+      groupBox.append('circle')
+        .attr('class', 'pointer')
+        .attr('r', circleR)
+        .attr('cx', x + boxs[item].width)
+        .attr('cy', y + boxs[item].height / 2)
+        .attr('pid', item)
+        .call(handle);
+
+
+      var groupHandle = this.d3.behavior.drag()
+        .origin(function() {
+          return {x: self.groups[r].x, y: self.groups[r].y };
+        });
+
+      groupHandle.on('dragstart', function() {
+        self.d3.event.sourceEvent.stopPropagation();
+      });
+
+      groupHandle.on('drag', function() {
+        groupWrapper.attr('transform', 'translate(' + d3.event.x + ',' + d3.event.y + ')');
+
+        // debugger;
+        self.groups[r].ele.forEach(function(index, gindex) {
+          getRelativeLines(self.lines, index).forEach(function(item) {
+            console.log('lineIndex:', item.index);
+            var line = self.d3.select('#' + self.createLineId(item.index));
+            var s = self.boxs[item.s];
+            var e = self.boxs[item.e];
+            // debugger;
+            if (item.s === index) {
+              s.x = myParseInt(self.d3.event.x);
+              s.y = myParseInt(self.d3.event.y + self.offsetY(r, gindex));
+            } else {
+              e.x = myParseInt(self.d3.event.x);
+              e.y = myParseInt(self.d3.event.y +  self.offsetY(r, gindex));
+            }
+            var newLine = getMinLine(s, e);
+            line.attr('x1', newLine.x1).attr('x2', newLine.x2).attr('y1', newLine.y1).attr('y2', newLine.y2);
+          })
+        });
+
+      });
+
+      groupHandle.on('dragend', function() {
+        var translate = self.getTransformXY(groupWrapper);
+        self.groups[r].x = translate.x;
+        self.groups[r].y = translate.y;
+        self.groups[r].ele.forEach(function(g, index) {
+          self.boxs[g].x = translate.x;
+          self.boxs[g].y = translate.y + self.offsetY(r, index);
+        })
+      });
+
+      if (group.moveable !== false) {
+        // add listener
+        groupWrapper.call(groupHandle);
+      }
+      boxs[item].x = group.x + x;
+      boxs[item].y = group.y + y;
+      y+= boxs[item].height;
+
+    });
+  };
+
   Graph.prototype.display = function() {
     var self = this;
 
-    for(var i = 0; i < this.boxs.length ; i++) {
-      this.drawBox(this.boxs[i], i);
+    if (this.groups.length > 0) {
+      for (var r = 0; r < this.groups.length; r++) {
+        this.drawGroup(this.groups[r], r);
+      }
+    } else {
+      for(var i = 0; i < this.boxs.length ; i++) {
+        this.drawBox(this.boxs[i], i);
+      }
     }
 
     for(var j = 0; j<this.lines.length ;j++) {
@@ -144,9 +285,7 @@
 
     this.container.on('mousemove', function() {
       var rad = 7;
-      var x = self.d3.mouse(d3.select('circle').node())[0],
-        y = self.d3.mouse(d3.select('circle').node())[1];
-      dummyLine.attr('x2', x + rad).attr('y2', y + rad);
+      dummyLine.attr('x2', self.d3.event.x - rad).attr('y2', self.d3.event.y - rad);
       if (dragging) {
         dummyLine.style("display", "block")
       }
@@ -162,6 +301,10 @@
     return 'line_' + i;
   };
 
+  Graph.prototype.createGroupId = function(i) {
+    return 'group_' + i;
+  };
+
   Graph.prototype.drawLine = function(line, i) {
     var dline = this.transformLine2Coordinate(line);
     this.container.append('line')
@@ -173,8 +316,8 @@
       .attr('y2', dline.y2);
   };
 
-  Graph.prototype.createGroupId = function(i) {
-    return 'group_' + i;
+  Graph.prototype.createBoxId = function(i) {
+    return 'box_' + i;
   };
 
   Graph.prototype.getTransformXY = function(boxWrapper) {
@@ -191,137 +334,6 @@
     }
   };
 
-  Graph.prototype.drawBox = function(box, i) {
-    var self = this;
-    var boxWrapper = this.container.append('g');
-    boxWrapper
-      .attr('id', this.createGroupId(i))
-      .attr('transform', 'translate(' + box.x + ',' + box.y + ')');
-
-    // draw rect
-    boxWrapper.append('rect')
-      .attr('class', 'box')
-      .attr('x', 0)
-      .attr('y', 0)
-      .attr('width', box.width)
-      .attr('height', box.height);
-
-    // draw Text
-    boxWrapper.append('text')
-      .attr('class', 'text')
-      .attr('font-size', this.textSize + 'px')
-      .attr('x', this.paddingLeft) // TODO: 调整文字布局
-      .attr('y', this.textSize + this.paddingTop)
-      .text(box.text);
-
-    // Pointer
-    var handle = self.d3.behavior.drag()
-      .origin(function() {
-        return {};
-      });
-    handle.on('dragstart', function() {
-      var eCircle = self.d3.select(d3.event.sourceEvent.target);
-      lineSx = myParseInt(eCircle.attr('cx')) + box.x;
-      lineSy = myParseInt(eCircle.attr('cy')) + box.y;
-      dummyLine.attr('x1', lineSx).attr('y1', lineSy);
-      dragging = true;
-      self.d3.event.sourceEvent.stopPropagation();
-    });
-
-    handle.on('drag', function() {
-      // console.log('drag1')
-    });
-
-    handle.on('dragend', function() {
-      dragging = false;
-      // console.log('dragEnd1');
-      var eCircle = self.d3.select(d3.event.sourceEvent.target);
-      if (eCircle.attr('pid') !== null) {
-        self.addLine({s: i, e: myParseInt(eCircle.attr('pid'))});
-      }
-      dummyLine.style("display", "none");
-    });
-
-    var circleR = 2;
-
-    boxWrapper.append('circle')
-      .attr('class', 'pointer')
-      .attr('r', circleR)
-      .attr('cx', 0)
-      .attr('cy', box.height/2)
-      .attr('pid', i)
-      .call(handle);
-
-    boxWrapper.append('circle')
-      .attr('class', 'pointer')
-      .attr('r', circleR)
-      .attr('cx', box.width/2)
-      .attr('cy', 0)
-      .attr('pid', i)
-      .call(handle);
-
-    boxWrapper.append('circle')
-      .attr('class', 'pointer')
-      .attr('r', circleR)
-      .attr('cx', box.width/2)
-      .attr('cy', box.height)
-      .attr('pid', i)
-      .call(handle);
-
-    boxWrapper.append('circle')
-      .attr('class', 'pointer')
-      .attr('r', circleR)
-      .attr('cx', box.width)
-      .attr('cy', box.height/2)
-      .attr('pid', i)
-      .call(handle);
-
-
-    var boxHandle = this.d3.behavior.drag()
-      .origin(function() {
-        return {x: self.boxs[i].x, y: self.boxs[i].y };
-      });
-
-    boxHandle.on('dragstart', function() {
-      // console.log('box');
-      self.d3.event.sourceEvent.stopPropagation();
-    });
-
-    boxHandle.on('drag', function() {
-      // self.emit('drag');
-      boxWrapper.attr('transform', 'translate(' + d3.event.x + ',' + d3.event.y + ')');
-
-      // debugger;
-      getRelativeLines(self.lines, i).forEach(function(item) {
-        var line = self.d3.select('#' + self.createLineId(item.index));
-        var s = self.boxs[item.s];
-        var e = self.boxs[item.e];
-        // debugger;
-        if (item.s === i) {
-          s.x = myParseInt(self.d3.event.x);
-          s.y = myParseInt(self.d3.event.y);
-        } else {
-          e.x = myParseInt(self.d3.event.x);
-          e.y = myParseInt(self.d3.event.y);
-        }
-        var newLine = getMinLine(s, e);
-        line.attr('x1', newLine.x1).attr('x2', newLine.x2).attr('y1', newLine.y1).attr('y2', newLine.y2);
-      })
-    });
-
-    boxHandle.on('dragend', function() {
-      var translate = self.getTransformXY(boxWrapper);
-      self.boxs[i].x = translate.x;
-      self.boxs[i].y = translate.y;
-    });
-
-    if (box.moveable !== false) {
-      // add listener
-      boxWrapper.call(boxHandle);
-    }
-
-
-  };
 
   global.Graph = Graph;
 })(window);
