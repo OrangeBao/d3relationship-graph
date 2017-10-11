@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <!--<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>-->
+    <script src="https://cdn.bootcss.com/d3/3.5.1/d3.min.js"></script>
+    <script src="graph.js" charset="utf-8"></script>
+    <style>
+        .pointer {
+            fill: blue;
+            stroke-width: 15;
+            stroke: transparent;
+            cursor: pointer;
+        }
+        .dummy {
+            stroke: green;
+            stroke-width: 3px;
+            display:none;
+            stroke-dasharray: 5 7;
+        }
+        .box {
+            stroke: black;
+            fill: white;
+            cursor: move;
+        }
+        .text {
+            fill: black;
+        }
+        .line {
+            stroke: black;
+        }
+    </style>
+</head>
+<body>
+<svg id="container" width="500" height="500"></svg>
+</body>
+<script>
+
+    window.onload=function() {
+      var boxs = [
+        { x:10, y:10, width: 60, height: 30, text: 'A'},
+        { x:10, y:50, width: 60, height: 30, text: 'B'},
+        { x:10, y:90, width: 60, height: 30, text: 'C' },
+        { x:10, y:130, width: 60, height: 30, text: 'D' },
+        { x:10, y:170, width: 60, height: 30, text: 'E' },
+
+        { x:200, y:10, width: 60, height: 30, text: 'F' },
+        { x:200, y:50, width: 60, height: 30, text: 'G' },
+        { x:200, y:90, width: 60, height: 30, text: 'H' },
+        { x:200, y:130, width: 60, height: 30, text: 'I' },
+      ];
+      var lines = [
+//        { s: 0, e: 1 },
+//        { s: 1, e: 2 }
+        ];
+      var graph = new Graph({
+        boxs: boxs,
+        lines: lines,
+        d3: d3,
+        id: 'container',
+        textPaddingLeft: 10,
+        textPaddingTop: 8,
+        textSize: 12,
+        eventHandler: {
+          dragStart: function() {
+            console.log('drag start');
+          },
+          drag: function() {
+            console.log('draging');
+          },
+          dragEnd: function() {
+            console.log('drag end');
+          }
+        }
+      });
+      graph.display();
+    }
+</script>
+</html>
