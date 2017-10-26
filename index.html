@@ -3,21 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <!--<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>-->
-    <script src="https://cdn.bootcss.com/d3/3.5.1/d3.min.js"></script>
     <script src="graph.js" charset="utf-8"></script>
     <style>
         .pointer {
-            fill: blue;
+            fill: transparent;
             stroke-width: 20;
             stroke: transparent;
             cursor: pointer;
+        }
+        .pointer.blue {
+            fill: blue;
         }
         .dummy {
             stroke: green;
             stroke-width: 3px;
             display:none;
             stroke-dasharray: 5 7;
+        }
+        .dummy.visible {
+            display: block;
         }
         .box {
             stroke: black;
@@ -33,42 +37,51 @@
     </style>
 </head>
 <body>
-<svg id="container" width="500" height="500"></svg>
+<svg id="container" width="500" height="500">
+    <defs>
+        <marker id="arrow"
+                fill="#f00"
+                viewBox="0 0 10 10" refX="0" refY="5"
+                markerUnits="strokeWidth"
+                markerWidth="4" markerHeight="3"
+                orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" />
+        </marker>
+    </defs>
+</svg>
 </body>
 <script>
 
 
-    window.onload=function() {
-      var boxs = [
-        {  width: 60, height: 30, text: 'A'},
-        {  width: 60, height: 30, text: 'B'},
-        { width: 60, height: 30, text: 'C' },
-        { width: 60, height: 30, text: 'D' },
-        { width: 60, height: 30, text: 'E' },
+  window.onload=function() {
+    var container = document.querySelector('#container');
 
-        {  width: 60, height: 30, text: 'F' },
-        { width: 60, height: 30, text: 'G' },
-        { width: 60, height: 30, text: 'H' }
-        ];
-      var lines = [
-        { s: 0, e: 6},
-        { s: 1, e: 6 }
-        ];
-      var groups = [
-        {ele: [0,1,2,3,4], x:10, y:10},
-        {ele: [5,6,7], x:200, y:10}
-      ];
-      var graph = new Graph({
-        groups: groups,
-        boxs: boxs,
-        lines: lines,
-        d3: d3,
-        id: 'container',
-        textPaddingLeft: 10,
-        textPaddingTop: 8,
-        textSize: 12
-      });
-      graph.display();
-    }
+    var boxs = [
+      { width: 60, height: 30, text: 'A'},
+      { width: 60, height: 30, text: 'B'},
+      { width: 60, height: 30, text: 'C' },
+      { width: 60, height: 30, text: 'D' },
+      { width: 60, height: 30, text: 'E' },
+
+      {  width: 60, height: 30, text: 'F' },
+      { width: 60, height: 30, text: 'G' },
+      { width: 60, height: 30, text: 'H' }
+    ];
+    var lines = [
+      { s: 0, e: 6},
+      { s: 1, e: 6 }
+    ];
+    var groups = [
+      {ele: [0,1,2,3,4], x:10, y:10},
+      {ele: [5,6,7], x:200, y:10}
+    ];
+    var graph = new Graph({
+      groups: groups,
+      boxs: boxs,
+      lines: lines,
+      id: 'container'
+    });
+    graph.render();
+  }
 </script>
 </html>
